@@ -1,4 +1,4 @@
-module.exports = function (router) {
+var router = require('express').Router();
 
     var homeRoute = router.route('/');
 
@@ -7,5 +7,4 @@ module.exports = function (router) {
         res.json({ message: 'My connection string is ' + connectionString });
     });
 
-    return router;
-}
+module.exports = router;

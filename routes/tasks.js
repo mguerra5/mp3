@@ -2,18 +2,18 @@
 var Task = require('../models/task');
 var User = require('../models/user');
 var { createQuery } = require('../utils/parseQuery');
+var router = require('express').Router();
 
-function toBool(v) {
+function convertBool(v) {
   if (typeof v === 'boolean') return v;
   if (typeof v === 'string') return v.toLowerCase() === 'true';
   return !!v;
 }
 
-function isValidDate(d) {
+function isDate(d) {
   return d instanceof Date && !isNaN(d.getTime());
 }
 
-module.exports = function(router) {
   router.get('/', async function(req, res, next) {
     try {
       const q = createQuery(req, { resource: 'tasks' });
@@ -37,11 +37,11 @@ module.exports = function(router) {
       if (!name || !deadline) {
         return res.status(400).json({ message: 'name and deadline required', data: null });
       }
-      const deadlineDate = new Date(deadline);
-      if (!isValidDate(deadlineDate)) {
+      const deadlineDate = new Date(Number(deadline));
+      if (!isDate(deadlineDate)) {
         return res.status(400).json({ message: 'deadline must be a valid date', data: null });
       }
-      completed = toBool(completed);
+      completed = convertBool(completed);
       let assignedUserName = 'unassigned';
       if (assignedUser) {
         const u = await User.findById(assignedUser).lean().exec();
@@ -81,17 +81,17 @@ module.exports = function(router) {
       if (!old) return res.status(404).json({ message: 'Task not found', data: null });
       let { name, description, deadline, completed, assignedUser } = req.body;
       if (!name || !deadline) {
-        return res.status(400).json({ message: 'name and deadline required', data: null });
+        return res.status(400).json({ message: 'name AND deadline required', data: null });
       }
-      const deadlineDate = new Date(deadline);
-      if (!isValidDate(deadlineDate)) {
+      const deadlineDate = new Date(Number(deadline));
+      if (!isDate(deadlineDate)) {
         return res.status(400).json({ message: 'deadline must be a valid date', data: null });
       }
-      completed = toBool(completed);
+      completed = convertBool(completed);
       let assignedUserName = 'unassigned';
       if (assignedUser) {
         const u = await User.findById(assignedUser).lean().exec();
-        if (!u) return res.status(400).json({ message: 'assignedUser does not exist', data: null });
+        if (!u) return res.status(400).json({ message: 'user does not exist', data: null });
         assignedUserName = u.name;
       } else {
         assignedUser = '';
@@ -138,5 +138,4 @@ module.exports = function(router) {
     } catch (e) { next(e); }
   });
 
-  return router;
-};
+module.exports = router;

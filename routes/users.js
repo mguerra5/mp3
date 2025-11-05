@@ -2,11 +2,14 @@
 var User = require('../models/user.js')
 var Task = require('../models/task.js')
 var { createQuery } = require('../utils/parseQuery.js')
+var router = require('express').Router()
 
-module.exports = function(router) {
+
   router.get('/', async function(req, res, next) {
     try {
+     // console.log("RAW REQ.QUERY.SORT:", req.query.sort);
       const q = createQuery(req, { resource: 'users' });
+      // console.log("PARSED Q.SORT:", q.sort);
       if (q.count) {
         const n = await User.countDocuments(q.where);
         return res.json({ message: 'OK', data: n });
@@ -35,13 +38,13 @@ module.exports = function(router) {
     try {
       const { name, email } = req.body;
       if (!name || !email) {
-        return res.status(400).json({ message: 'need to provide name AND email', data: req })
+        return res.status(400).json({ message: 'Need to provide name AND email', data: null })
       }
       const user = await User.create({ name, email });
       res.status(201).json({ message: 'Created', data: user });
     } catch (e) {
       if (e && e.code === 11000) {
-        return res.status(400).json({ message: 'Email already exists', data: req });
+        return res.status(400).json({ message: 'email already exists', data: null });
       }
       next(e);
     }
@@ -52,7 +55,7 @@ module.exports = function(router) {
       const { select } = createQuery(req, { resource: 'users' });
       const user = await User.findById(req.params.id).select(select || {});
       if (!user) {
-        return res.status(404).json({ message: 'No User exists for this ID.', data: req });
+        return res.status(404).json({ message: 'No User exists for this ID.', data: null });
       }
       res.json({ message: 'OK', data: user });
     } catch (e) {
@@ -65,14 +68,16 @@ module.exports = function(router) {
       const id = req.params.id;
       const exists = await User.findById(id);
       if (!exists) {
-        return res.status(404).json({ message: 'User does not exist for this ID.', data: req })
+        return res.status(404).json({ message: 'user does not exist for this ID.', data: null })
       }
       const { name, email } = req.body;
       if (!name || !email) {
-        return res.status(400).json({ message: 'need to provide name AND email', data: req })
+        return res.status(400).json({ message: 'need to provide name AND email', data: null })
       }
       let pendingTasks = req.body.pendingTasks || [];
-      pendingTasks = [pendingTasks];
+      if (!Array.isArray(pendingTasks)) {
+        pendingTasks = [pendingTasks];
+      }
       pendingTasks = pendingTasks.map(String);
 
       const nextUser = await User.findByIdAndUpdate(
@@ -102,7 +107,7 @@ module.exports = function(router) {
       res.json({ message: 'UPDATED', data: nextUser });
     } catch (e) {
       if (e && e.code === 11000) {
-        return res.status(400).json({ message: 'Email already exists', data: req });
+        return res.status(400).json({ message: 'Email already exists', data: null });
       }
       next(e);
     }
@@ -117,7 +122,7 @@ module.exports = function(router) {
       );
       const gone = await User.findByIdAndDelete(id);
       if (!gone) {
-        return res.status(404).json({ message: 'User not found', data: req });
+        return res.status(404).json({ message: 'User not found', data: null });
       }
       res.status(204).end();
     } catch (e) {
@@ -125,8 +130,7 @@ module.exports = function(router) {
     }
   });
 
-  return router;
-};
+module.exports = router;
 
 
 
